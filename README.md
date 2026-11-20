@@ -1,15 +1,59 @@
-# kzp-lab06 (варіант 1: Бібліотека)
+# Лабораторна робота №7 — Бібліотека (варіант 1)
 
-CSV `title,author,year,pages,genre` → стабільний текстовий звіт.
-Відбір `year >= 2020`; множина — автори; словник — кількість книг за `genre`;
-звіт — кількість, сумарні сторінки, найдовша книга.
+**НУ «Львівська політехніка», КІ-302, Андрухів М.С.**  
+Python >= 3.11, macOS / Linux / Windows.
 
-    pip install -e ".[dev]"
-    kzp-lab06 data/input.csv report.txt          # або python -m kzp_lab06.cli ...
-    kzp-lab06 data/input.csv report.txt --stream # потокова обробка
+## Призначення
 
-Коди завершення: 0, 1 (DataError), 2 (аргументи), 3 (файл), 4 (неочікувана).
+Переробка лабораторної №6 зі словників на об'єкти: абстрактний `Book`, підтипи
+`PrintedBook` і `AudioBook`, поліморфний `reading_time()`, `Protocol`, незмінний
+`BookSummary`, валідація `@property`, атомарний запис звіту.
 
-Перевірка: `python -m pytest`, `ruff check .`, `ruff format --check .`,
-`python -m build`, `python scripts/verify_wheel.py`,
-`python scripts/measure_memory.py`.
+## Встановлення та запуск
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+python -m kzp_lab07 data/input.csv report.txt
+python -m kzp_lab07 data/audio_example.csv audio_report.txt --times
+python -m pytest
+ruff check .
+ruff format --check .
+python -m build
+python scripts/verify_wheel.py
+```
+
+У Windows активація: `.venv\Scripts\activate`.
+
+## Важливе про CSV
+
+Формат лабораторної №6 **не змінено**: `title,author,year,pages,genre`.
+У CSV немає типу книги й реальної тривалості аудіокниги. Щоб продемонструвати
+обидва підтипи без додавання стовпців, застосовано **навчальну домовленість**:
+жанр `audio` або `audiobook` означає `AudioBook`, усі інші — `PrintedBook`.
+`reading_time()` використовує умовні швидкості 40 і 60 стор./год відповідно.
+Це оцінка, а не фактична тривалість аудіозапису. Приклад у `data/audio_example.csv`.
+
+Звичайний звіт не містить додаткових блоків і відповідає `baseline/summary.txt`.
+`--times` додає час та топ автора. У звіті враховуються книги з 2020 року.
+
+## Структура
+
+- `src/kzp_lab07/models.py` — класи, Protocol, dataclass
+- `loader.py` — CSV, валідація та вибір підтипу
+- `analysis.py` — підсумок через спільний інтерфейс
+- `reporting.py` — текст і `ReportWriter`
+- `cli.py` — коди 0/1/2/3/4
+- `tests/` — тести, зокрема порівняння з baseline
+- `.github/workflows/ci.yml` — тести, ruff, wheel на 3 ОС
+
+## GitHub
+
+Створіть гілку `lab07`, завантажте **вміст цієї папки** (не ZIP), створіть Pull Request до `main`.
+Не завантажуйте `.venv`, `dist`, `build` та кеші.
+
+## Академічна доброчесність
+
+Проєкт підготовлено за допомогою ChatGPT (OpenAI). Перед здачею перевірте код,
+тести, збіг із фактичними даними лабораторної №6 та результати GitHub Actions.

@@ -3,10 +3,10 @@
 Сумарна кількість сторінок: 1930
 Найдовша книга: Quantum "Garden" (Bob Stone, 2023), 450 стор.
 Кількість книг за жанрами:
-  novel: 3
-  poetry: 1
-  science: 2
+novel: 3
+poetry: 1
+science: 2
 Автори (3):
-  Ann Lee
-  Bob Stone
-  Олена Коваль
+Ann Lee
+Bob Stone
+Олена Коваль
