@@ -1,91 +1,50 @@
-"""Читання CSV (модуль csv) і перетворення рядків на записи зі типами."""
-
+"""CSV -> об'єкти; початкові п'ять колонок не змінюються."""
 import csv
-import re
-from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any
 
 from .errors import DataError
+from .models import AudioBook, Book, PrintedBook
 
 FIELDS = ("title", "author", "year", "pages", "genre")
-INT_FIELDS = ("year", "pages")
-_INT_RE = re.compile(r"[+-]?[0-9]+")
 
 
-def normalize_text(text: str) -> str:
-    """Прибрати зайві пробіли: " ".join(text.split())."""
-    return " ".join(text.split())
-
-
-def _parse_text(raw: object, field: str, line: int) -> str:
-    text = normalize_text(raw) if isinstance(raw, str) else ""
-    if not text:
-        raise DataError(f"Рядок {line}: поле {field} порожнє", line=line, field=field)
-    return text
-
-
-def _parse_int(raw: object, field: str, line: int) -> int:
-    text = raw.strip() if isinstance(raw, str) else ""
-    if not text:
-        raise DataError(f"Рядок {line}: поле {field} порожнє", line=line, field=field)
-    try:
-        if not _INT_RE.fullmatch(text):
-            raise ValueError(text)
-        value = int(text)
-    except ValueError as error:
-        raise DataError(
-            f"Рядок {line}: поле {field} має бути цілим числом",
-            line=line,
-            field=field,
-        ) from error
-    if value < 0:
-        raise DataError(
-            f"Рядок {line}: поле {field} має бути не менше 0",
-            line=line,
-            field=field,
-        )
-    return value
-
-
-def parse_row(row: dict[Any, Any], line: int) -> dict[str, Any]:
-    """Перетворити один рядок DictReader на запис; line — номер у файлі."""
+def build_book(row: dict[str, str | None], line: int) -> Book:
     if None in row:
-        raise DataError(f"Рядок {line}: забагато полів", line=line)
-    record: dict[str, Any] = {}
-    for field in FIELDS:
-        if field in INT_FIELDS:
-            record[field] = _parse_int(row.get(field), field, line)
+        raise DataError(f"Рядок {line}: забагато полів")
+    values: dict[str, str | int] = {}
+    for key in FIELDS:
+        raw = row.get(key)
+        if raw is None or not raw.strip():
+            raise DataError(f"Рядок {line}: поле {key} порожнє")
+        if key in ("year", "pages"):
+            try:
+                # int('1_000') дозволений у Python, але не у строгому CSV.
+                if not raw.strip().isascii() or not raw.strip().isdecimal():
+                    raise ValueError(raw)
+                values[key] = int(raw.strip())
+            except ValueError as error:
+                raise DataError(f"Рядок {line}: поле {key} має бути цілим числом") from error
         else:
-            record[field] = _parse_text(row.get(field), field, line)
-    return record
-
-
-def iter_lines(lines: Iterable[str]) -> Iterator[dict[str, Any]]:
-    """Генератор записів з рядків CSV (ледачий: помилки виникають під час обходу)."""
-    reader = csv.DictReader(lines)
-    header = reader.fieldnames
-    if not header:
-        raise DataError("Порожній CSV: немає заголовка", line=1)
-    names = [name.strip() for name in header]
-    reader.fieldnames = names
-    missing = [field for field in FIELDS if field not in names]
-    if missing:
-        joined = ", ".join(missing)
-        raise DataError(f"Відсутні стовпці: {joined}", line=1, field=joined)
-    for row in reader:
-        yield parse_row(row, reader.line_num)
-
-
-def iter_records(path: str | Path) -> Iterator[dict[str, Any]]:
-    """Генератор записів файла; файл відкривається лише на читання."""
+            values[key] = raw
+    # Без нової колонки тип визначається домовленістю: жанр audio/audiobook.
+    cls = AudioBook if str(values["genre"]).strip().lower() in {"audio", "audiobook"} else PrintedBook
     try:
-        with open(path, newline="", encoding="utf-8-sig") as handle:
-            yield from iter_lines(handle)
-    except UnicodeDecodeError as error:
+        return cls(**values)
+    except ValueError as error:
+        raise DataError(f"Рядок {line}: {error}") from error
+
+
+def load_books(path: str | Path) -> list[Book]:
+    try:
+        with Path(path).open("r", encoding="utf-8-sig", newline="") as file:
+            reader = csv.DictReader(file)
+            if reader.fieldnames is None:
+                raise DataError("Порожній CSV: немає заголовка")
+            missing = [key for key in FIELDS if key not in reader.fieldnames]
+            if missing:
+                raise DataError("Відсутні стовпці: " + ", ".join(missing))
+            return [build_book(row, reader.line_num) for row in reader]
+    except UnicodeError as error:
         raise DataError("Файл не є коректним UTF-8") from error
-
-
-def load_records(path: str | Path) -> list[dict[str, Any]]:
-    """Прочитати всі записи у список словників."""
-    return list(iter_records(path))
+    except csv.Error as error:
+        raise DataError("Пошкоджений CSV") from error
