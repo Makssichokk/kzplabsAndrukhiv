@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BookTest {
     @Test
     void constructorAcceptsValidBook() {
-        Book book = new Book("Кобзар", "Тарас Шевченко", 320, 250.50);
+        Book book = new PrintedBook("Кобзар", "Тарас Шевченко", 320, 250.50);
         assertEquals("Кобзар", book.getTitle());
         assertEquals("Тарас Шевченко", book.getAuthor());
         assertEquals(320, book.getPages());
@@ -14,19 +14,19 @@ class BookTest {
     @Test
     void constructorRejectsEmptyTitleAndAuthor() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Book(" ", "Автор", 100, 10));
+                () -> new PrintedBook(" ", "Автор", 100, 10));
         assertThrows(IllegalArgumentException.class,
-                () -> new Book("Назва", "", 100, 10));
+                () -> new PrintedBook("Назва", "", 100, 10));
     }
 
     @Test
     void constructorRejectsInvalidPageCountAndPrice() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Book("Назва", "Автор", 0, 10));
+                () -> new PrintedBook("Назва", "Автор", 0, 10));
         assertThrows(IllegalArgumentException.class,
-                () -> new Book("Назва", "Автор", 10, -1));
+                () -> new PrintedBook("Назва", "Автор", 10, -1));
         assertThrows(IllegalArgumentException.class,
-                () -> new Book("Назва", "Автор", 10, Double.NaN));
+                () -> new PrintedBook("Назва", "Автор", 10, Double.NaN));
     }
 
     @Test
@@ -57,29 +57,29 @@ class BookTest {
 
     @Test
     void toStringUsesExpectedFormat() {
-        Book book = new Book("Тест", "Автор", 100, 12.5);
+        Book book = new PrintedBook("Тест", "Автор", 100, 12.5);
         assertEquals("Тест | Автор | 100 стор. | 12.50 грн", book.toString());
     }
 
     @Test
     void constructorRejectsNullTitleAndAuthor() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Book(null, "Автор", 100, 10));
+                () -> new PrintedBook(null, "Автор", 100, 10));
         assertThrows(IllegalArgumentException.class,
-                () -> new Book("Назва", null, 100, 10));
+                () -> new PrintedBook("Назва", null, 100, 10));
     }
 
     @Test
     void constructorAcceptsZeroPrice() {
-        assertEquals(0.0, new Book("Назва", "Автор", 100, 0).getPrice(), 0.0001);
+        assertEquals(0.0, new PrintedBook("Назва", "Автор", 100, 0).getPrice(), 0.0001);
     }
 
     @Test
     void constructorRejectsInfinity() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Book("Назва", "Автор", 100, Double.POSITIVE_INFINITY));
+                () -> new PrintedBook("Назва", "Автор", 100, Double.POSITIVE_INFINITY));
         assertThrows(IllegalArgumentException.class,
-                () -> new Book("Назва", "Автор", 100, Double.NEGATIVE_INFINITY));
+                () -> new PrintedBook("Назва", "Автор", 100, Double.NEGATIVE_INFINITY));
     }
 
     @Test

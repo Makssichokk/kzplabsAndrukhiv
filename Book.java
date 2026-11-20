@@ -1,151 +1,38 @@
 import java.util.Locale;
-
-/**
- * Незмінна сутність книжки з каталогу (варіант 12).
- * Містить назву, автора, кількість сторінок і ціну.
- */
-public final class Book {
-    private final String title;
-    private final String author;
+import java.util.Objects;
+/** Абстрактна незмінна книжка з загальними полями й перевірками. */
+public abstract class Book {
+    private final String title, author;
     private final PagePrice pagePrice;
-
-    /**
-     * Створює книжку та перевіряє всі її інваріанти.
-     *
-     * @param title назва книжки, не може бути порожньою
-     * @param author автор, не може бути порожнім
-     * @param pages кількість сторінок, має бути більшою за нуль
-     * @param price ціна, має бути скінченним невід'ємним числом
-     * @throws IllegalArgumentException якщо хоча б одне значення некоректне
-     */
-    public Book(String title, String author, int pages, double price) {
-        if (title == null || title.trim().isEmpty()) {
-            throw new IllegalArgumentException("Назва книжки відсутня.");
-        }
-        if (author == null || author.trim().isEmpty()) {
-            throw new IllegalArgumentException("Автор книжки відсутній.");
-        }
-        this.title = title.trim();
-        this.author = author.trim();
-        this.pagePrice = new PagePrice(pages, price);
+    /** Створює книжку і перевіряє інваріанти. */
+    protected Book(String title, String author, int pages, double price) {
+        if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Назва книжки відсутня.");
+        if (author == null || author.trim().isEmpty()) throw new IllegalArgumentException("Автор книжки відсутній.");
+        this.title=title.trim(); this.author=author.trim(); this.pagePrice=new PagePrice(pages,price);
     }
-
-    /**
-     * Створює об'єкт Book з одного CSV-рядка.
-     * Формат: title;author;pages;price.
-     *
-     * @param line рядок CSV
-     * @return створена книжка
-     * @throws IllegalArgumentException якщо формат або дані некоректні
-     */
-    public static Book fromCsv(String line) {
-        if (line == null || line.trim().isEmpty()) {
-            throw new IllegalArgumentException("Порожній рядок.");
-        }
-
-        String[] fields = line.split(";", -1);
-        if (fields.length != 4) {
-            throw new IllegalArgumentException("Неправильна кількість полів.");
-        }
-
-        String title = fields[0].trim();
-        String author = fields[1].trim();
-        if (title.isEmpty()) {
-            throw new IllegalArgumentException("Назва книжки відсутня.");
-        }
-        if (author.isEmpty()) {
-            throw new IllegalArgumentException("Автор книжки відсутній.");
-        }
-
-        try {
-            int pages = Integer.parseInt(fields[2].trim());
-            double price = Double.parseDouble(fields[3].trim().replace(',', '.'));
-            return new Book(title, author, pages, price);
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Неправильний формат числових даних.");
-        }
-    }
-
-    /** @return назва книжки */
-    public String getTitle() {
-        return title;
-    }
-
-    /** @return автор книжки */
-    public String getAuthor() {
-        return author;
-    }
-
-    /** @return кількість сторінок */
-    public int getPages() {
-        return pagePrice.pages();
-    }
-
-    /** @return ціна книжки */
-    public double getPrice() {
-        return pagePrice.price();
-    }
-
-    /** @return незмінне значення з кількістю сторінок і ціною */
-    public PagePrice getPagePrice() {
-        return pagePrice;
-    }
-
-    /**
-     * Повертає текстове представлення книжки.
-     *
-     * @return відформатований запис книжки
-     */
-    @Override
-    public String toString() {
-        return String.format(Locale.ROOT, "%s | %s | %d стор. | %.2f грн",
-                title, author, getPages(), getPrice());
-    }
-
-    /** @return новий Builder для створення книжки */
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    /** Builder для створення Book. Валідація виконується в конструкторі Book. */
+    /** Читає старий чотирипольний CSV як друковану книжку. */
+    public static Book fromCsv(String line) { return BookFactory.fromCsv(line); }
+    /** Повертає назву. */ public final String getTitle(){return title;}
+    /** Повертає автора. */ public final String getAuthor(){return author;}
+    /** Повертає сторінки. */ public final int getPages(){return pagePrice.pages();}
+    /** Повертає ціну. */ public final double getPrice(){return pagePrice.price();}
+    /** Повертає об'єкт-значення сторінок і ціни. */ public final PagePrice getPagePrice(){return pagePrice;}
+    /** Повертає формат книжки. */ public abstract BookFormat getFormat();
+    /** Обчислює умовну вартість читання у гривнях. */ public abstract double readingCost();
+    /** Формат, сумісний із попереднім звітом. */
+    @Override public final String toString(){return String.format(Locale.ROOT,"%s | %s | %d стор. | %.2f грн",title,author,getPages(),getPrice());}
+    /** Рівність за підтипом, назвою та автором. */
+    @Override public final boolean equals(Object o){if(this==o)return true; if(o==null||getClass()!=o.getClass())return false; Book b=(Book)o;return title.equals(b.title)&&author.equals(b.author);}
+    /** Хеш за тими самими полями, що й equals. */
+    @Override public final int hashCode(){return Objects.hash(getClass(),title,author);}
+    /** Створює сумісний Builder друкованої книжки. */ public static Builder builder(){return new Builder();}
+    /** Builder друкованої книжки для сумісності старого API. */
     public static final class Builder {
-        private String title;
-        private String author;
-        private int pages;
-        private double price;
-
-        /** @param title назва книжки @return цей Builder */
-        public Builder title(String title) {
-            this.title = title;
-            return this;
-        }
-
-        /** @param author автор @return цей Builder */
-        public Builder author(String author) {
-            this.author = author;
-            return this;
-        }
-
-        /** @param pages кількість сторінок @return цей Builder */
-        public Builder pages(int pages) {
-            this.pages = pages;
-            return this;
-        }
-
-        /** @param price ціна @return цей Builder */
-        public Builder price(double price) {
-            this.price = price;
-            return this;
-        }
-
-        /**
-         * Створює книжку через основний конструктор.
-         *
-         * @return створена книжка
-         * @throws IllegalArgumentException якщо дані некоректні
-         */
-        public Book build() {
-            return new Book(title, author, pages, price);
-        }
+        private String title,author;private int pages;private double price;
+        /** Задає назву. */ public Builder title(String v){title=v;return this;}
+        /** Задає автора. */ public Builder author(String v){author=v;return this;}
+        /** Задає сторінки. */ public Builder pages(int v){pages=v;return this;}
+        /** Задає ціну. */ public Builder price(double v){price=v;return this;}
+        /** Створює друковану книжку. */ public Book build(){return new PrintedBook(title,author,pages,price);}
     }
 }

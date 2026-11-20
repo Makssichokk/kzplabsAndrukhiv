@@ -9,7 +9,7 @@ import java.util.Locale;
 
 /**
  * Консольна програма для читання, перевірки й аналізу каталогу книжок.
- * Варіант 12. Дані зберігаються у CSV-файлі з роздільником ';'.
+ * Варіант 1. Дані зберігаються у CSV-файлі з роздільником ';'.
  */
 public class Main {
     private static final String DEFAULT_INPUT = "data/input.csv";
@@ -19,10 +19,12 @@ public class Main {
     public static void main(String[] args) {
         Path input = Paths.get(DEFAULT_INPUT);
         Path output = Paths.get(DEFAULT_OUTPUT);
+        boolean readingCosts = false;
 
         try {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
+                    case "--reading-costs" -> readingCosts = true;
                     case "--help" -> {
                         printHelp();
                         return;
@@ -30,7 +32,7 @@ public class Main {
                     case "--version" -> {
                         String version = Main.class.getPackage().getImplementationVersion();
                         System.out.println("Каталог книжок, версія "
-                                + (version != null ? version : "2.0.0"));
+                                + (version != null ? version : "3.0.0"));
                         return;
                     }
                     case "--input" -> {
@@ -54,19 +56,20 @@ public class Main {
             return;
         }
 
-        runProgram(input, output);
+        runProgram(input, output, readingCosts);
     }
 
     private static void printHelp() {
-        System.out.println("КАТАЛОГ КНИЖОК — варіант 12");
+        System.out.println("КАТАЛОГ КНИЖОК — варіант 1");
         System.out.println("Використання: java Main [параметри]");
         System.out.println("--help              Показати довідку");
+        System.out.println("--reading-costs     Додати поліморфні вартості читання");
         System.out.println("--version           Показати версію програми");
         System.out.println("--input <шлях>      Вказати вхідний CSV-файл");
         System.out.println("--output <шлях>     Вказати файл звіту");
     }
 
-    private static void runProgram(Path input, Path output) {
+    private static void runProgram(Path input, Path output, boolean readingCosts) {
         List<Book> books = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
@@ -92,6 +95,7 @@ public class Main {
         }
 
         String report = createReport(books, errors);
+        if (readingCosts) report += createReadingCosts(books);
         System.out.print(report);
 
         try {
@@ -158,5 +162,11 @@ public class Main {
             }
         }
         return report.toString();
+    }
+    /** Поліморфний додатковий розділ без перевірки конкретного підтипу. */
+    public static String createReadingCosts(List<? extends Book> books) {
+        StringBuilder sb=new StringBuilder("\n========== ВАРТІСТЬ ЧИТАННЯ ==========\n");
+        for(Book book:books) sb.append(String.format(Locale.ROOT,"%s (%s): %.2f грн%n",book.getTitle(),book.getFormat().label(),book.readingCost()));
+        return sb.toString();
     }
 }
