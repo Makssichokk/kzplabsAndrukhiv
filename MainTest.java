@@ -13,8 +13,8 @@ class MainTest {
     @Test
     void reportCalculatesStatistics() {
         List<Book> books = List.of(
-                new Book("А", "Автор", 100, 10),
-                new Book("Б", "Автор", 300, 30));
+                new PrintedBook("А", "Автор", 100, 10),
+                new PrintedBook("Б", "Автор", 300, 30));
         String report = Main.createReport(books, List.of());
         assertTrue(report.contains("Середня кількість сторінок: 200.00"));
         assertTrue(report.contains("Найдорожча книжка: Б"));

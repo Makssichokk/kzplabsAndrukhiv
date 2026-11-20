@@ -1,59 +1,26 @@
-# Лабораторна робота №7 — Бібліотека (варіант 1)
+# Каталог книжок — лабораторна №3 (варіант 1)
 
-**НУ «Львівська політехніка», КІ-302, Андрухів М.С.**  
-Python >= 3.11, macOS / Linux / Windows.
+Java 17+, Maven, JUnit 5. Проєкт побудовано на лабораторній №2. CSV не змінено: `title;author;pages;price`. Старі рядки завжди перетворюються на `PrintedBook`; електронні книжки створюються програмно або через `BookFactory.fromCsv(line, BookFormat.ELECTRONIC)`.
 
-## Призначення
+## Ієрархія
 
-Переробка лабораторної №6 зі словників на об'єкти: абстрактний `Book`, підтипи
-`PrintedBook` і `AudioBook`, поліморфний `reading_time()`, `Protocol`, незмінний
-`BookSummary`, валідація `@property`, атомарний запис звіту.
+`Book` — абстрактний незмінний базовий клас із полями `title`, `author`, `PagePrice`, перевірками та `equals/hashCode`. `PrintedBook` повертає повну ціну з `readingCost()`, `ElectronicBook` — 80% ціни (умовна навчальна модель). `BookFormat` має `PRINTED` і `ELECTRONIC`. Звіт працює з `List<Book>` і викликає методи без `instanceof`.
 
-## Встановлення та запуск
+## Запуск
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e ".[dev]"
-python -m kzp_lab07 data/input.csv report.txt
-python -m kzp_lab07 data/audio_example.csv audio_report.txt --times
-python -m pytest
-ruff check .
-ruff format --check .
-python -m build
-python scripts/verify_wheel.py
+mvn test
+mvn package
+java -jar target/katalog-knyzhok-3.0.0.jar --input data/input.csv --output data/report.txt
+java -jar target/katalog-knyzhok-3.0.0.jar --reading-costs
 ```
 
-У Windows активація: `.venv\Scripts\activate`.
+Без `--reading-costs` звіт зберігає попередній формат; прапорець додає окремий розділ. Старі JUnit-тести збережено, а прямі виклики `new Book(...)` замінено на `new PrintedBook(...)`, оскільки `Book` став абстрактним. Рівність визначається фактичним класом, назвою та автором; це демонструється через `HashSet`.
 
-## Важливе про CSV
+## Архітектурний вибір
 
-Формат лабораторної №6 **не змінено**: `title,author,year,pages,genre`.
-У CSV немає типу книги й реальної тривалості аудіокниги. Щоб продемонструвати
-обидва підтипи без додавання стовпців, застосовано **навчальну домовленість**:
-жанр `audio` або `audiobook` означає `AudioBook`, усі інші — `PrintedBook`.
-`reading_time()` використовує умовні швидкості 40 і 60 стор./год відповідно.
-Це оцінка, а не фактична тривалість аудіозапису. Приклад у `data/audio_example.csv`.
+Спадкування потрібне, оскільки друкована й електронна книжки — різновиди книжки. Композиція збережена для `PagePrice` (книжка *має* сторінки й ціну). Новий підтип реалізує `readingCost()` і `getFormat()`; код звітності не потрібно переписувати.
 
-Звичайний звіт не містить додаткових блоків і відповідає `baseline/summary.txt`.
-`--times` додає час та топ автора. У звіті враховуються книги з 2020 року.
+## Примітка щодо варіанта
 
-## Структура
-
-- `src/kzp_lab07/models.py` — класи, Protocol, dataclass
-- `loader.py` — CSV, валідація та вибір підтипу
-- `analysis.py` — підсумок через спільний інтерфейс
-- `reporting.py` — текст і `ReportWriter`
-- `cli.py` — коди 0/1/2/3/4
-- `tests/` — тести, зокрема порівняння з baseline
-- `.github/workflows/ci.yml` — тести, ruff, wheel на 3 ОС
-
-## GitHub
-
-Створіть гілку `lab07`, завантажте **вміст цієї папки** (не ZIP), створіть Pull Request до `main`.
-Не завантажуйте `.venv`, `dist`, `build` та кеші.
-
-## Академічна доброчесність
-
-Проєкт підготовлено за допомогою ChatGPT (OpenAI). Перед здачею перевірте код,
-тести, збіг із фактичними даними лабораторної №6 та результати GitHub Actions.
+У наданому архіві лабораторної №2 у коментарях стояв номер 12; тут використано варіант 1 за прямою вказівкою користувача. Для суворої відповідності вимозі незмінного номера варіанта номер потрібно узгодити з викладачем.
