@@ -1,26 +1,20 @@
-# Каталог книжок — лабораторна №3 (варіант 1)
+# Лабораторна №4 — Потокова обробка даних у Java-проєкті
+Варіант 1, Каталог книжок. База: лабораторна №3 (Book, PrintedBook, ElectronicBook, BookFormat).
 
-Java 17+, Maven, JUnit 5. Проєкт побудовано на лабораторній №2. CSV не змінено: `title;author;pages;price`. Старі рядки завжди перетворюються на `PrintedBook`; електронні книжки створюються програмно або через `BookFactory.fromCsv(line, BookFormat.ELECTRONIC)`.
-
-## Ієрархія
-
-`Book` — абстрактний незмінний базовий клас із полями `title`, `author`, `PagePrice`, перевірками та `equals/hashCode`. `PrintedBook` повертає повну ціну з `readingCost()`, `ElectronicBook` — 80% ціни (умовна навчальна модель). `BookFormat` має `PRINTED` і `ELECTRONIC`. Звіт працює з `List<Book>` і викликає методи без `instanceof`.
+## Сумісність
+Старий CSV `title;author;pages;price` читається без змін. Для перевірки завдання №4 додано розширений формат `title;author;pages;price;year;genre` у `data/input-lab04.csv`. Рік і жанр для старих записів невідомі (`null`); фільтр 2020+ їх пропускає, групування відносить до «Не вказано». Основний звіт не змінено, запити доступні тільки за `--queries`.
 
 ## Запуск
-
 ```bash
+javac -encoding UTF-8 -d out/classes src/main/java/*.java
+java -cp out/classes Main --input data/input.csv
+java -cp out/classes Main --input data/input-lab04.csv --queries --find "Кобзар"
 mvn test
-mvn package
-java -jar target/katalog-knyzhok-3.0.0.jar --input data/input.csv --output data/report.txt
-java -jar target/katalog-knyzhok-3.0.0.jar --reading-costs
 ```
 
-Без `--reading-costs` звіт зберігає попередній формат; прапорець додає окремий розділ. Старі JUnit-тести збережено, а прямі виклики `new Book(...)` замінено на `new PrintedBook(...)`, оскільки `Book` став абстрактним. Рівність визначається фактичним класом, назвою та автором; це демонструється через `HashSet`.
+## Запити
+`BookQueries.recent` — filter year >= 2020; `titles` — map; `countByGenre` — groupingBy(TreeMap, counting); `pageStatistics` — summarizingInt; `top` — sorted by pages DESC then title ASC, limit(N); `findByTitle` — Optional<Book>.
+Потокові методи не мутують вхідний список; `top(-1)` відхиляється. Попередні JUnit-тести збережені, додано `BookQueriesTest`.
 
-## Архітектурний вибір
-
-Спадкування потрібне, оскільки друкована й електронна книжки — різновиди книжки. Композиція збережена для `PagePrice` (книжка *має* сторінки й ціну). Новий підтип реалізує `readingCost()` і `getFormat()`; код звітності не потрібно переписувати.
-
-## Примітка щодо варіанта
-
-У наданому архіві лабораторної №2 у коментарях стояв номер 12; тут використано варіант 1 за прямою вказівкою користувача. Для суворої відповідності вимозі незмінного номера варіанта номер потрібно узгодити з викладачем.
+## Перевірка
+Java 21: компіляція і запуск контрольного набору успішні. Maven у середовищі відсутній, тому JUnit і GitHub CI потрібно запустити у власному репозиторії. Workflow з попередньої роботи збережено. GitHub Issue і Pull Request створюються користувачем після завантаження гілки `lab04`.

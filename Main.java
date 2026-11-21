@@ -20,11 +20,15 @@ public class Main {
         Path input = Paths.get(DEFAULT_INPUT);
         Path output = Paths.get(DEFAULT_OUTPUT);
         boolean readingCosts = false;
+        boolean queries = false;
+        String findTitle = null;
 
         try {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
                     case "--reading-costs" -> readingCosts = true;
+                    case "--queries" -> queries = true;
+                    case "--find" -> {if(i+1>=args.length)throw new IllegalArgumentException("Не вказано назву після --find");findTitle=args[++i];queries=true;}
                     case "--help" -> {
                         printHelp();
                         return;
@@ -56,7 +60,7 @@ public class Main {
             return;
         }
 
-        runProgram(input, output, readingCosts);
+        runProgram(input, output, readingCosts,queries,findTitle);
     }
 
     private static void printHelp() {
@@ -64,12 +68,14 @@ public class Main {
         System.out.println("Використання: java Main [параметри]");
         System.out.println("--help              Показати довідку");
         System.out.println("--reading-costs     Додати поліморфні вартості читання");
+        System.out.println("--queries           Додати запити Stream API");
+        System.out.println("--find <назва>      Пошук за назвою через Optional");
         System.out.println("--version           Показати версію програми");
         System.out.println("--input <шлях>      Вказати вхідний CSV-файл");
         System.out.println("--output <шлях>     Вказати файл звіту");
     }
 
-    private static void runProgram(Path input, Path output, boolean readingCosts) {
+    private static void runProgram(Path input, Path output, boolean readingCosts,boolean queries,String findTitle) {
         List<Book> books = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
@@ -96,6 +102,7 @@ public class Main {
 
         String report = createReport(books, errors);
         if (readingCosts) report += createReadingCosts(books);
+        if (queries) report += createQueries(books,findTitle);
         System.out.print(report);
 
         try {
@@ -119,24 +126,19 @@ public class Main {
      */
     public static String createReport(List<Book> books, List<String> errors) {
         StringBuilder report = new StringBuilder();
-        long totalPages = 0;
-        double totalPrice = 0.0;
-        Book mostExpensive = null;
+        var statistics=BookQueries.pageStatistics(books);
+        double totalPrice=books.stream().mapToDouble(Book::getPrice).sum();
+        Book mostExpensive=books.stream().max(java.util.Comparator.comparingDouble(Book::getPrice)).orElse(null);
 
         report.append("========== КАТАЛОГ КНИЖОК ==========\n");
         report.append("Кількість коректних книжок: ")
                 .append(books.size()).append("\n\n");
 
         for (Book book : books) {
-            totalPages += book.getPages();
-            totalPrice += book.getPrice();
-            if (mostExpensive == null || book.getPrice() > mostExpensive.getPrice()) {
-                mostExpensive = book;
-            }
             report.append(book).append("\n");
         }
 
-        double averagePages = books.isEmpty() ? 0.0 : (double) totalPages / books.size();
+        double averagePages = statistics.getAverage();
         report.append("\n========== РЕЗУЛЬТАТИ ==========\n");
         report.append(String.format(Locale.ROOT,
                 "1. Середня кількість сторінок: %.2f%n", averagePages));
@@ -169,4 +171,19 @@ public class Main {
         for(Book book:books) sb.append(String.format(Locale.ROOT,"%s (%s): %.2f грн%n",book.getTitle(),book.getFormat().label(),book.readingCost()));
         return sb.toString();
     }
+    /** Формує додатковий розділ запитів, не змінюючи основний звіт. */
+    public static String createQueries(List<Book> books,String findTitle){
+        StringBuilder sb=new StringBuilder("\n========== ЗАПИТИ STREAM API ==========\n");
+        sb.append("Книги від 2020 року: ").append(BookQueries.recent(books).stream().map(Book::getTitle).collect(java.util.stream.Collectors.joining(", "))).append("\n");
+        sb.append("Назви: ").append(String.join(", ",BookQueries.titles(books))).append("\n");
+        sb.append("Кількість за жанрами: ").append(BookQueries.countByGenre(books)).append("\n");
+        var st=BookQueries.pageStatistics(books);
+        if(st.getCount()==0)sb.append("Статистика сторінок: немає даних\n");
+        else sb.append(String.format(Locale.ROOT,"Статистика сторінок: кількість=%d, сума=%d, мінімум=%d, середнє=%.2f, максимум=%d%n",st.getCount(),st.getSum(),st.getMin(),st.getAverage(),st.getMax()));
+        sb.append("Топ-5 за сторінками:\n");
+        int rank=1;for(Book b:BookQueries.top(books,5))sb.append(rank++).append(". ").append(b.getTitle()).append(" (").append(b.getPages()).append(" стор.)\n");
+        if(findTitle!=null)sb.append("Пошук \""+findTitle+"\": ").append(BookQueries.findByTitle(books,findTitle).map(Book::toString).orElse("не знайдено")).append("\n");
+        return sb.toString();
+    }
+
 }

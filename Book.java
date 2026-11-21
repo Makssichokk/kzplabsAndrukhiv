@@ -4,11 +4,20 @@ import java.util.Objects;
 public abstract class Book {
     private final String title, author;
     private final PagePrice pagePrice;
+    private final Integer year;
+    private final String genre;
     /** Створює книжку і перевіряє інваріанти. */
     protected Book(String title, String author, int pages, double price) {
+        this(title,author,pages,price,null,null);
+    }
+    /** Створює книжку з необов’язковими метаданими року й жанру. */
+    protected Book(String title, String author, int pages, double price, Integer year, String genre) {
         if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Назва книжки відсутня.");
         if (author == null || author.trim().isEmpty()) throw new IllegalArgumentException("Автор книжки відсутній.");
         this.title=title.trim(); this.author=author.trim(); this.pagePrice=new PagePrice(pages,price);
+        if(year!=null && (year<1450 || year>2100)) throw new IllegalArgumentException("Некоректний рік видання.");
+        if(genre!=null && genre.isBlank()) throw new IllegalArgumentException("Жанр не може бути порожнім.");
+        this.year=year; this.genre=genre==null?null:genre.trim();
     }
     /** Читає старий чотирипольний CSV як друковану книжку. */
     public static Book fromCsv(String line) { return BookFactory.fromCsv(line); }
@@ -17,6 +26,8 @@ public abstract class Book {
     /** Повертає сторінки. */ public final int getPages(){return pagePrice.pages();}
     /** Повертає ціну. */ public final double getPrice(){return pagePrice.price();}
     /** Повертає об'єкт-значення сторінок і ціни. */ public final PagePrice getPagePrice(){return pagePrice;}
+    /** Повертає рік видання або null, якщо старий CSV не містив року. */ public final Integer getYear(){return year;}
+    /** Повертає жанр або null для старих записів. */ public final String getGenre(){return genre;}
     /** Повертає формат книжки. */ public abstract BookFormat getFormat();
     /** Обчислює умовну вартість читання у гривнях. */ public abstract double readingCost();
     /** Формат, сумісний із попереднім звітом. */
