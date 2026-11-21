@@ -22,10 +22,13 @@ public class Main {
         boolean readingCosts = false;
         boolean queries = false;
         String findTitle = null;
+        Path exportPath = null, importPath = null;
 
         try {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
+                    case "--export" -> { if(i+1>=args.length)throw new IllegalArgumentException("Не вказано шлях після --export");exportPath=Paths.get(args[++i]); }
+                    case "--import" -> { if(i+1>=args.length)throw new IllegalArgumentException("Не вказано шлях після --import");importPath=Paths.get(args[++i]); }
                     case "--reading-costs" -> readingCosts = true;
                     case "--queries" -> queries = true;
                     case "--find" -> {if(i+1>=args.length)throw new IllegalArgumentException("Не вказано назву після --find");findTitle=args[++i];queries=true;}
@@ -60,6 +63,10 @@ public class Main {
             return;
         }
 
+        if(exportPath!=null || importPath!=null){
+            try{runCsvOperations(exportPath,importPath);}catch(CsvExportException ex){System.out.println("Помилка CSV: "+ex.getMessage());if(ex.getCause()!=null)System.out.println("Причина: "+ex.getCause());}
+            return;
+        }
         runProgram(input, output, readingCosts,queries,findTitle);
     }
 
@@ -70,9 +77,29 @@ public class Main {
         System.out.println("--reading-costs     Додати поліморфні вартості читання");
         System.out.println("--queries           Додати запити Stream API");
         System.out.println("--find <назва>      Пошук за назвою через Optional");
+        System.out.println("--export <шлях>    Експорт демонстраційних BookRecord і round-trip");
+        System.out.println("--import <шлях>    Імпорт BookRecord з CSV");
         System.out.println("--version           Показати версію програми");
         System.out.println("--input <шлях>      Вказати вхідний CSV-файл");
         System.out.println("--output <шлях>     Вказати файл звіту");
+    }
+
+    /** Виконує експорт і/або імпорт без зміни старого звіту. */
+    private static void runCsvOperations(Path export,Path imported) throws CsvExportException {
+        if(export!=null){
+            Repository<BookRecord> repo=new Repository<>();
+            for(BookRecord b:SampleBooks.records())repo.add(b);
+            new CsvExporter<>(BookRecord.class).write(export,repo.all());
+            List<BookRecord> restored=BookCsvImporter.read(export);
+            System.out.println("Експортовано записів: "+repo.size());
+            System.out.println("Round-trip: "+(repo.all().equals(restored)?"списки рівні":"списки НЕ рівні"));
+            if(!repo.all().equals(restored))throw new CsvExportException("Round-trip не пройдено");
+        }
+        if(imported!=null){
+            List<BookRecord> books=BookCsvImporter.read(imported);
+            System.out.println("Імпортовано записів: "+books.size());
+            for(BookRecord b:books)System.out.println(b);
+        }
     }
 
     private static void runProgram(Path input, Path output, boolean readingCosts,boolean queries,String findTitle) {
