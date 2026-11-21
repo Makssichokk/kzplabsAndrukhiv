@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>ua.lab</groupId>
     <artifactId>katalog-knyzhok</artifactId>
-    <version>3.0.0</version>
+    <version>5.0.0</version>
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
